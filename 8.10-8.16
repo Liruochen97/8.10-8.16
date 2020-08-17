@@ -1,0 +1,176 @@
+##基于分组数据绘制直方图
+ggplot(birthwt,aes(x=bwt))+geom_histogram(fill="white",colour="black")+facet_grid(smoke~.) ##以smoke为分面变量
+birthwt1<-birthwt
+birthwt1$smoke<-factor(birthwt1$smoke) ##将smoke转化为因子
+birthwt1$smoke<-revalue(birthwt1$smoke,c("0"="No Smoke","1"="Smoke")) ##重新命名因子水平的名称
+ggplot(birthwt1,aes(x=bwt))+geom_histogram(fill="white",colour="black")+facet_grid(smoke~.)  ##分面图标签变为"No Smoke"和"Smoke"
+ggplot(birthwt1,aes(x=bwt,fill=smoke))+geom_histogram(position="identity",alpha=0.4) ##以smoke为分组绘制重叠的直方图
+##绘制密度曲线
+ggplot(faithful,aes(x=waiting))+geom_density() ##或使用line绘制
+ggplot(faithful,aes(x=waiting))+geom_line(stat="density")+ ##使用stat="density"参数绘制密度曲线
+expand_limits(y=0)
+ggplot(faithful,aes(x=waiting))+geom_line(stat="density",adjust=.25,colour="red")+
+geom_line(stat="density",adjust=2,colour="blue")+
+geom_line(stat="density") ##使用不同颜色将不同分组大小的核密度图绘制于一张图中，填充颜色和x轴范围可自调
+ggplot(faithful,aes(x=waiting,y=..density..))+ ##通y=..density..来使直方图的标度缩小，适配核密度曲线
+geom_histogram()+geom_density()+xlim(35,105) ##直方图颜色等参数可自调，先绘制直方图，再绘制核密度曲线，防止遮挡
+##基于分组数据绘制分组密度曲线
+ggplot(birthwt1,aes(x=bwt,colour=smoke))+geom_density() ##需使用因子型变量作为分组变量
+ggplot(birthwt1,aes(x=bwt,fill=smoke))+geom_density(alpha=.3) ##或将分组映射给填充颜色
+ggplot(birthwt1,aes(x=bwt,y=..density..))+geom_histogram(binwidth=200,fill="cornsilk",colour="grey")+geom_density()+facet_grid(smoke~.) ##分组绘制直方图和密度曲线时需要分面绘制
+##绘制频数多边形
+binsize<-diff(range(faithful$waiting))/15 ##设定分组数
+ggplot(faithful,aes(x=waiting))+geom_freqpoly(binwidth=binsize)
+##绘制基本箱线图
+ggplot(birthwt,aes(x=factor(race),y=bwt))+geom_boxplot(width=1.5,outlier.size=1.5,outlier.shape=21) ##自行设置箱子宽度及异常值点的样式
+##向箱线图添加槽口
+ggplot(birthwt,aes(x=factor(race),y=bwt))+geom_boxplot(width=1.5,outlier.size=1.5,outlier.shape=21,notch=TRUE) ##添加notch=TRUE语句即可，槽口是为了便于比较不同分布的中位数是否有差异
+##向箱线图添加均值
+ggplot(birthwt,aes(x=factor(race),y=bwt))+geom_boxplot(outlier.size=1.5,outlier.shape=21) +
+stat_summary(fun="mean",geom="point",shape=23,size=3,fill="white") ##正态分布的均值接近中位数。偏态则不同
+##绘制小提琴图
+ggplot(heightweight,aes(x=sex,y=heightIn))+
+geom_violin(trim=FALSE,adjust=.5) ##保留尾部，带宽更窄，使其更不平滑，也可以叠加箱线图
+##绘制wikinson点图
+countries2009<-subset(countries,Year==2009&healthexp>2000)
+ggplot(countries2009,aes(x=infmortality))+geom_dotplot(method="histodot",binwidth=.25)+ ##以直方图形式画点，组距为0.25
+geom_rug()+ ##标示数据点具体位置
+scale_y_continuous(breaks=NULL)+ ##移除刻度线 
+theme(axis.title.y=element_blank()) ##移除y轴标签（由于这种点图y轴数值无意义）
+ggplot(countries2009,aes(x=infmortality))+geom_dotplot(stackdir="center",binwidth=.25)+ ##通过stackdir="center"或centerwhole来控制点的对齐方式
+geom_rug()+ 
+scale_y_continuous(breaks=NULL)+
+theme(axis.title.y=element_blank()) 
+##基于分组数据绘制分组点图
+ggplot(heightweight,aes(x=sex,y=heightIn))+geom_dotplot(binaxis="y",binwidth=.5,stackdir="center") ##沿y轴堆积点
+##将点图叠加或放置在箱线图的旁边
+##叠加
+ggplot(heightweight,aes(x=sex,y=heightIn))+
+geom_boxplot(outlier.colour=NA,width=.4)+ ##隐去异常数据点
+geom_dotplot(binaxis="y",binwidth=.5,stackdir="center",fill=NA) ##将点设置为空心
+##旁边
+ggplot(heightweight,aes(x=sex,y=heightIn))+
+geom_boxplot(aes(x=as.numeric(sex)+0.2,group=sex),outlier.colour=NA,width=.25)+ 
+geom_dotplot(aes(x=as.numeric(sex)-0.2,group=sex),binaxis="y",binwidth=.5,stackdir="center",fill=NA) ##将sex转换为数值型作为坐标位置，同时需要指定分组
+##绘制二维数据的密度图
+ggplot(faithful,aes(x=eruptions,y=waiting))+
+geom_point()+stat_density2d(aes(colour=..level..))  ##带点的二维数据密度图，将密度曲线的高度映射给等高线的颜色
+ggplot(faithful,aes(x=eruptions,y=waiting))+
+geom_point()+stat_density2d(aes(fill=..density..),geom="raster",contour=FALSE) ##将密度映射给填充颜色，去掉等高线
+##添加文本注解
+p<-ggplot(faithful,aes(x=eruptions,y=waiting))
+p+geom_point()+annotate("text",x=3,y=48,label="Group1",family="serif",fontface="italic",colour="red",size=3)+annotate("text",x=4.5,y=66,label="Group2",family="serif",fontface="italic",colour="red",size=3) ##通过叠加annotate来逐条添加文本，可以自己设置字体
+p+geom_point()+
+annotate("text",x=-Inf,y=Inf,label="Upper left",family="serif",fontface="italic",colour="red",size=3,hjust=-0.2,vjust=1.0)+
+annotate("text",x=mean(range(faithful$eruptions)),y=-Inf,label="Bottom middle",family="serif",fontface="italic",colour="red",size=3,hjust=0.2,vjust=-0.5) ##逐条添加时不要使用geom_text,因为批量添加会导致严重遮盖，同时需要hjust和vjust来调整文本位置
+##在注解中使用数学表达式
+ggplot(data.frame(x=c(-3,3)),aes(x=x))+stat_function(fun=dnorm)+ ##使用一条正态分布曲线
+annotate("text",parse=TRUE,x=2,y=0.3,label="'Function:'*y==frac(1,sqrt(2*pi))*e^{-x^2/2}") ##添加parse=TRUE语句，常规符号需要用单引号且与公式间用*连接
+##添加直线
+ggplot(heightweight,aes(x=ageYear,y=heightIn,colour=sex))+geom_point()+
+geom_hline(yintercept=60)+ ##添加横线
+geom_vline(xintercept=14)+  ##添加竖线
+geom_abline(intercept=37.4,slope=1.75) ##添加斜线
+##添加线段和箭头
+pp<-ggplot(subset(climate,Source=="Berkeley"),aes(x=Year,y=Anomaly10y))+geom_line()
+pp+annotate("segment",x=1950,xend=1980,y=-.25,yend=-.25)
+library(grid)
+pp+annotate("segment",x=1850,xend=1820,y=-.8,yend=-.98,colour="blue",size=2,arrow=arrow(angle=60))+ ##可设置箭头的角度，箭头在哪边及度量单位
+annotate("segment",x=1950,xend=1980,y=-.25,yend=-.25,colour="black",size=2,arrow=arrow(ends="both",angle=90,length=unit(.2,"cm")))
+##添加矩形阴影
+ggplot(subset(climate,Source=="Berkeley"),aes(x=Year,y=Anomaly10y))+geom_line()+
+annotate("rect",xmin=1950,xmax=1980,ymin=-Inf,ymax=Inf,alpha=.1,fill="purple") ##rect所需参数为x，y最大最小值
+##高亮某一元素
+pg<-PlantGrowth
+pg$h1<-"n"
+pg$h1[pg$group=="trt2"]<-"y" ##创建用来区别颜色的列
+ggplot(pg,aes(x=group,y=weight,fill=h1))+geom_boxplot()+scale_fill_manual(values=c("grey","#FFDDCC"),guide=FALSE)
+##组别不多也可不创建新列,直接手动设置颜色
+ggplot(pg,aes(x=group,y=weight,fill=group))+geom_boxplot()+scale_fill_manual(values=c("grey","grey","#FFDDCC"),guide=FALSE)
+##添加误差线
+ce<-subset(cabbage_exp,Cultivar=="c39")
+ggplot(ce,aes(x=Date,y=Weight))+geom_bar(fill="white",colour="black",stat="identity")+
+geom_errorbar(aes(ymin=Weight-se,ymax=Weight+se),width=.2) ##需要指定误差线宽度
+ggplot(ce,aes(x=Date,y=Weight))+geom_line(aes(group=1))+geom_point()+geom_errorbar(aes(ymin=Weight-se,ymax=Weight+se),width=.2) ##为折线图添加误差线，同时由于每组只有一个观测，所以画折线时需要将这些观测看成一个组
+##为簇状条形图添加误差线时需要使误差线和列的宽度相同
+ggplot(cabbage_exp,aes(x=Date,y=Weight,fill=Cultivar))+geom_bar(position="dodge",stat="identity")+geom_errorbar(aes(ymin=Weight-se,ymax=Weight+se),width=.2,position=position_dodge(0.9)) ##将误差线宽度设置为列的默认宽度0.9
+##为多条折线图添加误差线做法类似，需要设置点、线、误差线的position参数一致以确保相互对齐
+##向独立分面添加注解
+p<-ggplot(mpg,aes(x=displ,y=hwy))+geom_point()+facet_grid(.~drv)
+labels<-data.frame(drv=c("4","f","r"),label=c("4wd","Front","Rear"))
+p+geom_text(x=6,y=40,aes(label=label),data=labels)
+p+annotate("text",x=6,y=42,label="label") ##向所有分面添加相同的注解
+##交换x轴和y轴
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+coord_flip()
+##若x变量是一个因子型变量，可以使用scale_x_discrete(limits=rev(levels(PlantGrowth$group)))来反转元素顺序
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+coord_flip()+scale_x_discrete(limits=rev(levels(PlantGrowth$group)))
+##设置连续型坐标轴的值域
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+ylim(0,max(PlantGrowth$weight)) ##或
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+scale_y_continuous(limits=c(0,max(PlantGrowth$weight))) ##ylim和scale_y_continuous选一个
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+scale_y_continuous(limits=c(0,10),breaks=c(0,5,10)) ##此处若是值域小于数据的取值范围，则数据会被修剪形成新的箱线图
+##扩展值域（不能缩减）
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+expand_limits(y=0)
+##反转一条连续型坐标轴
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+scale_y_reverse() ##x轴相似。或通过反转值域来实现
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+ylim(6.5,3.5)
+##修改类别型坐标轴上项目的顺序
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+scale_x_discrete(limits=c("trt1","ctrl","trt2")) ##或忽略某些项目
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+scale_x_discrete(limits=c("trt1","ctrl"))
+##设置x轴和y轴的缩放比例
+ggplot(marathon,aes(x=Half,y=Full))+geom_point()+
+coord_fixed() ##设置x、y轴单位长度代表的数量一样
+ggplot(marathon,aes(x=Half,y=Full))+geom_point()+
+coord_fixed()+
+scale_y_continuous(breaks=seq(0,390,30))+scale_x_continuous(breaks=seq(0,390,30)) ##设置网格线
+ggplot(marathon,aes(x=Half,y=Full))+geom_point()+
+coord_fixed(ratio=1/2) ##设置x:y轴单位长度代表的数量为1：2
+##设置刻度线的位置
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+scale_y_continuous(breaks=c(4,4.25,4.5,5,6)) ##手动设置刻度线位置（连续型）
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+scale_x_discrete(limits=c("trt1","ctrl"),breaks="ctrl") ##离散型
+##移除刻度线和标签
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+theme(axis.text.y=element_blank()) ##移除y轴刻度标签
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+theme(axis.text.y=element_blank(),axis.ticks=element_blank()) ##移除y轴刻度标签和所有刻度线
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+scale_y_continuous(breaks=NULL) ##去除所有y轴的网格线，离散型变量不可行
+##修改刻度标签的文本
+ggplot(heightweight,aes(x=ageYear,y=heightIn))+geom_point()+
+scale_y_continuous(breaks=c(50,56,60,63,72),labels=c("Tiny","Really\nshort","short","medium","tall")) ##更常见的是数据格式的转化并输出
+##修改刻度标签的外观
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+scale_x_discrete(limits=c("trt1","ctrl","trt2"),labels=c("Control","Treanment1","Treatment2"))+
+theme(axis.text.x=element_text(angle=30,hjust=1,vjust=1))  ##对标签进行位置调整，也可在该语句内设置字体字号等属性
+##修改坐标轴标签的文本
+ggplot(heightweight,aes(x=ageYear,y=heightIn))+geom_point()+
+xlab("Age in years")+ylab("Height in inches") ##或用labs(x=...,y=...)代替
+##或在标度中指定，常与设定网格线、值域等其他标度属性一起使用
+ggplot(heightweight,aes(x=ageYear,y=heightIn))+geom_point()+
+scale_x_continuous(name="Age\n (years)")
+##移除坐标轴标签
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+theme(axis.title.x=element_blank()) ##移除x轴标签，去掉预留位置
+ggplot(PlantGrowth,aes(x=group,y=weight))+geom_boxplot()+
+xlab("") ##将x轴标签设为""，预留其位置，y轴同理
+##修改坐标轴标签的外观
+ggplot(heightweight,aes(x=ageYear,y=heightIn))+geom_point()+
+theme(axis.title.x=element_text(face="italic",colour="darkred",size=10)) ##设置x轴标签外观
+ggplot(heightweight,aes(x=ageYear,y=heightIn))+geom_point()+
+ylab("Height\n(inches)")+theme(axis.title.y=element_text(angle=360,face="italic",colour="darkred",size=10,vjust=0.5))  ##调整y轴标签外观、方向及位置
+##沿坐标轴显示直线
+ggplot(heightweight,aes(x=ageYear,y=heightIn))+geom_point()+
+theme(axis.line=element_line(colour="black"))
+ggplot(heightweight,aes(x=ageYear,y=heightIn))+geom_point()+
+theme_bw()+ ##使用该主题时，沿坐标轴显示直线需要重置参数panel.border，否则右侧也会有线
+theme(panel.border=element_blank(),axis.line=element_line(colour="black",size=3,lineend="square")) ##线型较粗时可使用lineend="square"来使线末端重叠
